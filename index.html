@@ -41,9 +41,11 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .skill .lv{top:-.5em;bottom:auto;left:auto;right:-.4em;transform:none;color:#9fe8ff;padding:0 .45em}
 .skill .hpbar{position:absolute;left:12%;right:12%;bottom:-.45em;height:.38em;background:#1d140e;border-radius:9px;overflow:hidden;border:1px solid #1d140e}
 .skill .hpbar i{display:block;height:100%;width:100%;background:#4fd1ff}
-.skill.wave{border-color:#ffb04a}
-.skill.wave.pulse{animation:pulse 1s ease-in-out infinite}
-@keyframes pulse{50%{box-shadow:0 0 0 2px #1d140e,0 0 16px 4px rgba(255,140,60,.9)}}
+.wavebtn{display:flex;align-items:center;gap:.35em;height:max(24px,calc(var(--u)*28px));padding:0 .7em 0 .15em;border-radius:999px;border:1.5px solid #ffb04a;background:linear-gradient(#d9542f,#a8341c);color:#fff;font-size:max(10px,calc(var(--u)*14px));white-space:nowrap;box-shadow:0 2px 0 rgba(0,0,0,.4)}
+.wavebtn svg{height:85%;width:auto;aspect-ratio:1;border-radius:50%;flex:none}
+.wavebtn:disabled{filter:grayscale(.5) brightness(.8);cursor:default}
+.wavebtn.pulse{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 2px #1d140e,0 0 14px 4px rgba(255,140,60,.9)}}
 .tip{position:absolute;left:50%;transform:translateX(-50%);max-width:70%;width:max-content;pointer-events:none;background:rgba(24,18,12,.9);border:2px solid #c99a3e;border-radius:10px;padding:calc(var(--fs)*.35) calc(var(--fs)*.7);line-height:1.45;color:#e9dcc0;top:calc(var(--fs)*3.2)}
 .tip.low{top:auto;bottom:calc(var(--fs)*.6);left:auto;right:calc(var(--fs)*.6);transform:none;max-width:55%}
 .tip b{color:#fff}
@@ -68,6 +70,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <div class="pill"><svg viewBox="0 0 20 20" aria-hidden="true"><ellipse cx="11" cy="13" rx="6.5" ry="3.5" fill="#d9a12a" stroke="#2a1208" stroke-width="1.4"/><ellipse cx="9" cy="9" rx="6.5" ry="3.5" fill="#ffd34a" stroke="#2a1208" stroke-width="1.4"/><ellipse cx="9" cy="8.5" rx="3" ry="1.4" fill="#fff0a8"/></svg><b id="sGold">0</b></div>
       <div class="pill"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2.5c4 0 6.5 2.6 6.5 6 0 2.2-1.2 3.6-2.4 4.3V16h-8.2v-3.2C4.7 12.1 3.5 10.7 3.5 8.5c0-3.4 2.5-6 6.5-6z" fill="#efe4c8" stroke="#2a1208" stroke-width="1.4"/><ellipse cx="7.3" cy="9" rx="1.9" ry="2.2" fill="#2a1208"/><ellipse cx="12.7" cy="9" rx="1.9" ry="2.2" fill="#2a1208"/><path d="M8 16v-2M10 16v-2M12 16v-2" stroke="#2a1208" stroke-width="1"/></svg><b id="sWave">0/10</b></div>
     </div>
+    <button id="btnWave" class="wavebtn" title="召喚下一波">
+        <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" fill="#b8402c"/><path d="M9 31L29 9M11 9l20 22" stroke="#e6ebf0" stroke-width="3.4" stroke-linecap="round"/><path d="M9 31L29 9M11 9l20 22" stroke="#1d140e" stroke-width="1" stroke-linecap="round" opacity=".5"/><path d="M8 26l6 6M32 26l-6 6" stroke="#e2b23a" stroke-width="3" stroke-linecap="round"/></svg>
+        <span id="waveLbl">開戰</span>
+      </button>
     <div class="btns">
       <button id="btnSpeed" class="sq" title="遊戲速度">1×</button>
       <button id="btnSound" class="sq" title="音效開關"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 8h3l4-3.5v11L6 12H3z" fill="#fff"/><path class="wave" d="M13 7c1.3 1.6 1.3 4.4 0 6M15.3 5c2.4 2.8 2.4 7.2 0 10" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/><path class="mute" d="M13 7l5 6M18 7l-5 6" stroke="#ff8a72" stroke-width="1.8" stroke-linecap="round"/></svg></button>
@@ -87,10 +93,6 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <button id="btnMeteor" class="skill" title="火雨：點擊後選擇落點">
       <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" fill="#8a2a14"/><path d="M6 6l14 14" stroke="#ffb04a" stroke-width="6" stroke-linecap="round" opacity=".7"/><path d="M10 6l12 12" stroke="#ffe08a" stroke-width="2.5" stroke-linecap="round"/><circle cx="25" cy="25" r="9" fill="#ff6a2a" stroke="#1d140e" stroke-width="1.8"/><circle cx="23" cy="23" r="4" fill="#ffe08a"/></svg>
       <span class="cdmask" id="meteorCd"></span><span class="cap" id="meteorLbl">火雨</span>
-    </button>
-    <button id="btnWave" class="skill wave" title="召喚下一波">
-      <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" fill="#b8402c"/><path d="M9 31L29 9M11 9l20 22" stroke="#e6ebf0" stroke-width="3.4" stroke-linecap="round"/><path d="M9 31L29 9M11 9l20 22" stroke="#1d140e" stroke-width="1" stroke-linecap="round" opacity=".5"/><path d="M8 26l6 6M32 26l-6 6" stroke="#e2b23a" stroke-width="3" stroke-linecap="round"/></svg>
-      <span class="cap" id="waveLbl">開戰</span>
     </button>
   </div>
   <div class="tip" id="tip" hidden></div>
