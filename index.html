@@ -100,6 +100,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" fill="#8a2a14"/><path d="M6 6l14 14" stroke="#ffb04a" stroke-width="6" stroke-linecap="round" opacity=".7"/><path d="M10 6l12 12" stroke="#ffe08a" stroke-width="2.5" stroke-linecap="round"/><circle cx="25" cy="25" r="9" fill="#ff6a2a" stroke="#1d140e" stroke-width="1.8"/><circle cx="23" cy="23" r="4" fill="#ffe08a"/></svg>
       <span class="cdmask" id="meteorCd"></span><span class="cap" id="meteorLbl">火雨</span>
     </button>
+    <button id="btnReinf" class="skill" title="援軍：點擊後選擇地點，召喚兩名民兵">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" fill="#2f6a3a"/><path d="M8 34V22c0-5 3-8 7-8s7 3 7 8v12z" fill="#c3cad3" stroke="#1d140e" stroke-width="1.6"/><path d="M18 34V20c0-5 3-8 7-8s7 3 7 8v14z" fill="#e6ebf0" stroke="#1d140e" stroke-width="1.6"/><path d="M9 14h12M19 12h12" stroke="#c3cad3" stroke-width="3" stroke-linecap="round"/><circle cx="25" cy="25" r="5" fill="#9a6a3a" stroke="#1d140e" stroke-width="1.4"/><path d="M30 6v10" stroke="#e6ebf0" stroke-width="2.4"/></svg>
+      <span class="cdmask" id="reinfCd"></span><span class="cap" id="reinfLbl">援軍</span>
+    </button>
   </div>
   <div class="tip" id="tip" hidden></div>
   <div class="overlay" id="ovStart">
@@ -112,6 +116,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <li>兵營的士兵會擋住地面敵人；砲塔打不到飛行單位</li>
         <li>提早召喚下一波可以拿到額外金幣</li>
         <li>點擊英雄（或左下英雄頭像）後再點地圖，英雄就會移動過去</li>
+          <li>左下「援軍」可在路上召喚兩名民兵擋怪 20 秒</li>
           <li>左下「旋風」是英雄技能：英雄迴旋放出旋風，沿路掃過並推回敵人</li>
           <li>第二關「怒海」：海盜船從水路衝進港口，速度快、兵營擋不住，要在海邊小島蓋塔攔截</li>
       </ul>
@@ -340,14 +345,15 @@ function setLevel(i){
   SPOTS=LEVEL.spots;WAVES=LEVEL.waves;HERO_SPAWN=LEVEL.heroSpawn;
   paintBg();
 }
-const METEOR_CD=45,TORNADO_CD=20;
+const METEOR_CD=45,TORNADO_CD=20,REINF_CD=15;
+const REINF_T={hp:[60],dmg:[[3,6]],armor:[.1],range:[80],respawn:0};
 
 // ---------- state ----------
 let S;
 function reset(){
   S={gold:LEVEL.gold||300,lives:20,wave:0,queue:[],t:0,enemies:[],towers:[],soldiers:[],proj:[],fx:[],
      spots:SPOTS.map(([x,y])=>({x,y,tower:null})),sel:null,hover:null,mx:-1,my:-1,
-     countdown:-1,speed:1,paused:false,meteorCd:0,targeting:false,over:false,started:false,heroSel:false,tornadoCd:0,tornados:[]};
+     countdown:-1,speed:1,paused:false,meteorCd:0,reinfCd:0,targeting:false,over:false,started:false,heroSel:false,tornadoCd:0,tornados:[]};
   S.hero=mkHero();
   updateHud();
 }
@@ -507,6 +513,7 @@ function update(dt){
     else{S.countdown-=dt;if(S.countdown<=0){S.countdown=-1;startWave();}}
   }
   if(S.meteorCd>0)S.meteorCd=Math.max(0,S.meteorCd-dt);
+  if(S.reinfCd>0)S.reinfCd=Math.max(0,S.reinfCd-dt);
   if(S.tornadoCd>0)S.tornadoCd=Math.max(0,S.tornadoCd-dt);
   updateTornados(dt);
 
@@ -533,6 +540,7 @@ function update(dt){
   // soldiers
   for(const s of S.soldiers){
     const tw=s.tw,T=tw.T;
+    if(s.reinf){s.life-=dt;if(s.life<=0||s.dead){if(!s.dead)S.fx.push({k:'poof',x:s.x,y:s.y,t:0,life:.4,r:8});releaseTarget(s);s.gone=true;continue;}}
     if(s.dead){s.respawn-=dt;if(s.respawn<=0){s.dead=false;s.hp=T.hp[tw.lvl];s.x=tw.x;s.y=tw.y;}continue;}
     if(s.target&&(s.target.dead||dist(s.target,tw.rally)>T.range[tw.lvl]+30))releaseTarget(s);
     if(!s.target){
@@ -556,6 +564,7 @@ function update(dt){
     if(s.swing)s.swing=Math.max(0,s.swing-dt);
   }
 
+  S.soldiers=S.soldiers.filter(s=>!s.gone);
   updateHero(dt);
 
   // towers
@@ -607,10 +616,17 @@ function update(dt){
 
   if(S.started&&S.wave>=WAVES.length&&!S.queue.length&&!S.enemies.length&&!S.over)endGame(true);
 }
-function killSoldier(s){s.dead=true;s.respawn=s.tw.T.respawn;releaseTarget(s);S.fx.push({k:'poof',x:s.x,y:s.y,t:0,life:.4,r:7});}
+function killSoldier(s){s.dead=true;s.respawn=s.tw.T.respawn;if(s.reinf)s.gone=true;releaseTarget(s);S.fx.push({k:'poof',x:s.x,y:s.y,t:0,life:.4,r:7});}
 function boom(x,y,r,dmg,kind,fire){
   S.fx.push({k:'boom',x,y,r,t:0,life:.45,fire});sfx('boom',fire?1.4:1);
   for(const e of S.enemies){if(e.dead||e.D.flying)continue;if(Math.hypot(e.x-x,e.y-y)<=r+e.D.r)hurt(e,dmg,kind);}
+}
+function castReinf(x,y){
+  if(S.reinfCd>0)return;S.reinfCd=REINF_CD;S.targeting=false;
+  const p=at(nearestD(x,y));const tw={T:REINF_T,lvl:0,rally:{x:p.x,y:p.y},x:p.x,y:p.y,soldiers:[],reinf:true};
+  for(let i=0;i<2;i++){const s={tw,i:i*2,x:p.x+(i?12:-12),y:p.y-6,home:{x:p.x+(i?10:-10),y:p.y+(i?4:-4)},hp:REINF_T.hp[0],dead:false,respawn:0,target:null,atkCd:.3,face:1,life:20,reinf:true};
+    tw.soldiers.push(s);S.soldiers.push(s);S.fx.push({k:'poof',x:s.x,y:s.y,t:0,life:.5,r:10});}
+  S.fx.push({k:'ring',x:p.x,y:p.y,t:0,life:.6,col:'#9be37a'});sfx('horn');updateHud();
 }
 function castMeteor(x,y){
   if(S.meteorCd>0)return;S.meteorCd=METEOR_CD;S.targeting=false;sfx('whoosh');
@@ -998,6 +1014,7 @@ const RIGS={
   guard:{limb:'#4a7cc0',limb2:'#365f99',leg:'#6b4a2b',leg2:'#55391f',boot:'#3d2818',hand:'#f0c39a',torso:'tunic',head:'kettle',shield:'round',weapon:'short'},
   sailor:{limb:BONE,limb2:BONE2,leg:BONE,leg2:BONE2,torso:'rags',head:'bandana',weapon:'cutlass'},
   corsair:{limb:BONE,limb2:BONE2,leg:'#2a2420',leg2:'#2a2420',boot:'#3a2c22',torso:'coat',head:'tricorn',shield:'skull',weapon:'cutlass',pauldron:STEEL2},
+  militia:{limb:'#5a8f3a',limb2:'#466f2d',leg:'#6b4a2b',leg2:'#55391f',boot:'#3d2818',hand:'#f0c39a',torso:'tunic',head:'kettle',shield:'round',weapon:'short'},
   zombie:{limb:ZOMB,limb2:ZOMB2,leg:'#6d4a2c',leg2:'#5a3c22',hand:ZOMB,torso:'zrag',head:'zombie',reach:true},
   captain:{limb:BONE,limb2:BONE2,leg:'#2a2420',leg2:'#2a2420',boot:'#3a2c22',torso:'coat',head:'captain',shield:'skull',weapon:'cutlass',pauldron:STEEL2,spikes:true,cape:'#1f1b18'},
 };
@@ -1041,7 +1058,7 @@ function rigTorso(R,q){
   if(st==='zrag'){ctx.beginPath();ctx.moveTo(-4.6,-24);ctx.lineTo(4.4,-24);ctx.lineTo(5,-9);ctx.lineTo(2,-10.5);ctx.lineTo(.2,-8.4);ctx.lineTo(-2,-10.5);ctx.lineTo(-5,-9);ctx.closePath();fs('#6d4a2c',1.4);
     ctx.beginPath();ctx.ellipse(.6,-19,2.6,3,0,0,7);fs(ZOMB,1);ctx.fillStyle=ZOMB2;ctx.beginPath();ctx.ellipse(-2.4,-15,1.2,.8,0,0,7);ctx.fill();return;}
   if(st==='rags'){ribs(0,-18,.8);ctx.beginPath();ctx.moveTo(-3.6,-14);ctx.lineTo(3.6,-14);ctx.lineTo(4.2,-9.5);ctx.lineTo(1.4,-10.5);ctx.lineTo(0,-9);ctx.lineTo(-1.6,-10.5);ctx.lineTo(-4.2,-9.5);ctx.closePath();fs('#8a5a33',1.3);return;}
-  const col=st==='tabard'?STEEL:st==='tunic'?'#4a7cc0':'#2b2622';
+  const col=st==='tabard'?STEEL:st==='tunic'?R.limb:'#2b2622';
   ctx.beginPath();ctx.moveTo(-4.4,-24.5);ctx.quadraticCurveTo(0,-26,4.6,-24.5);ctx.lineTo(4,-13);ctx.lineTo(4.6,-9.5);ctx.lineTo(-4.4,-9.5);ctx.lineTo(-3.8,-13);ctx.closePath();fs(col,1.5);
   if(st==='tabard'){ctx.beginPath();ctx.moveTo(-2.4,-21);ctx.lineTo(3,-21);ctx.lineTo(3.2,-8);ctx.lineTo(.3,-6.6);ctx.lineTo(-2.6,-8);ctx.closePath();fs(REDK,1.1);
     ctx.fillStyle='#f3efe6';ctx.fillRect(-.4,-21,1.6,13.5);ctx.fillStyle=GOLDK;ctx.beginPath();ctx.arc(.5,-23,1.3,0,7);ctx.fill();}
@@ -1163,7 +1180,7 @@ function drawSoldier(s){
   ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(0,6.5,7,2.6,0,0,7);ctx.fill();
   const mv=s.mv>0,tt=performance.now()/1000;
   const atk=s.swing>0?1-s.swing/.36:0;
-  pixDraw(()=>{if(s.face<0)ctx.scale(-1,1);ctx.translate(0,7);drawRig(RIGS.guard,{mv,walk:s.walk,atk,seed:s.i},.8);});
+  pixDraw(()=>{if(s.face<0)ctx.scale(-1,1);ctx.translate(0,7);drawRig(s.reinf?RIGS.militia:RIGS.guard,{mv,walk:s.walk,atk,seed:s.i},.8);});
   ctx.restore();
   const hp=s.hp/T.hp[L];if(hp<1){ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(s.x-8,s.y-27,16,3);ctx.fillStyle='#7ed957';ctx.fillRect(s.x-8,s.y-27,16*hp,3);}
 }
@@ -1352,7 +1369,7 @@ function render(){
   for(const tn of S.tornados)drawTornado(tn);
   for(const p of S.proj)drawProj(p);
   for(const f of S.fx)drawFx(f);
-  if(S.targeting&&S.mx>=0){rangeCircle(S.mx,S.my,48,'#ff7a2a');}
+  if(S.targeting&&S.mx>=0){if(S.targeting==='reinf'){const q=at(nearestD(S.mx,S.my));rangeCircle(q.x,q.y,22,'#9be37a');}else rangeCircle(S.mx,S.my,48,'#ff7a2a');}
   drawMenu();
   if(!S.started||S.countdown>0){const pulse=.5+.5*Math.sin(performance.now()/200);ctx.save();ctx.fillStyle=`rgba(224,96,63,${.5+pulse*.5})`;for(const R of ROUTES){const y=R.pts[0][1];ctx.beginPath();ctx.moveTo(14,y-12);ctx.lineTo(34,y);ctx.lineTo(14,y+12);ctx.fill();}ctx.restore();}
   if(S.paused&&!S.over){ctx.fillStyle='rgba(0,0,0,.35)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#f6ecd6';ctx.font='900 40px "Noto Serif TC",serif';ctx.textAlign='center';ctx.fillText('暫停',W/2,H/2);}
@@ -1377,7 +1394,9 @@ function updateDyn(){
   wb.disabled=!canCall;
   let wl=S.wave>=WAVES.length?'最後一波':canCall&&S.countdown>0?`+${Math.ceil(S.countdown)} 金`:!S.started?'開戰':`第 ${S.wave} 波`;
   const wle=$('waveLbl');if(wle.textContent!==wl)wle.textContent=wl;
-  const mb=$('btnMeteor');mb.disabled=S.meteorCd>0;mb.classList.toggle('on',S.targeting);
+  const mb=$('btnMeteor');mb.disabled=S.meteorCd>0;mb.classList.toggle('on',S.targeting==='meteor');
+  const rb=$('btnReinf');rb.disabled=S.reinfCd>0;rb.classList.toggle('on',S.targeting==='reinf');$('reinfCd').style.height=(S.reinfCd/REINF_CD*100)+'%';
+  const rl=S.reinfCd>0?`${Math.ceil(S.reinfCd)}`:'援軍';if($('reinfLbl').textContent!==rl)$('reinfLbl').textContent=rl;
   $('meteorCd').style.height=(S.meteorCd/METEOR_CD*100)+'%';
   const ml=S.meteorCd>0?`${Math.ceil(S.meteorCd)}`:'火雨';if($('meteorLbl').textContent!==ml)$('meteorLbl').textContent=ml;
   $('sGold').textContent=S.gold;
@@ -1398,6 +1417,7 @@ function describeTower(type,lvl){
 function refreshTip(){
   const h=S.hover;
   if(S.heroSel){const H=S.hero;return setTip(`<b>${HERO.name}</b> Lv${H.lvl+1}　生命 ${Math.ceil(H.hp)}/${HERO.hp[H.lvl]}・傷害 ${HERO.dmg[H.lvl][0]}–${HERO.dmg[H.lvl][1]}・護甲 ${Math.round(HERO.armor[H.lvl]*100)}%<br>點擊地圖任一處讓英雄移動過去。按左下「旋風」放出沿路前進的旋風。被動「旋風斬」每 ${HERO.skillCd} 秒自動施放，傷害 ${HERO.skillDmg[H.lvl]}。`);}
+  if(S.targeting==='reinf')return setTip('<b>援軍</b>：點擊道路附近，召喚兩名民兵擋住敵人 20 秒。按 Esc 取消。');
   if(S.targeting)return setTip('<b>火雨</b>：點擊地圖選擇落點，5 顆隕石對地面敵人造成範圍傷害。按 Esc 取消。');
   if(h&&h.act==='build'){const T=TOWERS[h.type];return setTip(`<b>${T.name}</b>（${T.cost[0]} 金）${T.desc}<br>${describeTower(h.type,0)}`);}
   if(S.sel&&S.sel.kind==='tower'){const tw=S.sel.tower;
@@ -1426,6 +1446,7 @@ cv.addEventListener('pointerleave',()=>{S.mx=-1;S.hover=null;});
 cv.addEventListener('pointerdown',ev=>{
   if(S.over)return;
   const p=toLogical(ev);
+  if(S.targeting==='reinf'){castReinf(p.x,p.y);return;}
   if(S.targeting){castMeteor(p.x,p.y);return;}
   const H=S.hero;
   if(H&&!H.dead&&Math.hypot(H.x-p.x,H.y-6-p.y)<26){S.heroSel=!S.heroSel;S.sel=null;sfx('click');return;}
@@ -1449,7 +1470,8 @@ addEventListener('keydown',ev=>{
 });
 function togglePause(){S.paused=!S.paused;$('btnPause').classList.toggle('on',S.paused);$('btnPause').title=S.paused?'繼續':'暫停';}
 $('btnWave').onclick=()=>{auInit();$('ovStart').hidden=true;startWave();};
-$('btnMeteor').onclick=()=>{if(S.meteorCd<=0){S.targeting=!S.targeting;S.sel=null;S.heroSel=false;}};
+$('btnMeteor').onclick=()=>{if(S.meteorCd<=0){S.targeting=S.targeting==='meteor'?false:'meteor';S.sel=null;S.heroSel=false;}};
+$('btnReinf').onclick=()=>{if(S.reinfCd<=0){S.targeting=S.targeting==='reinf'?false:'reinf';S.sel=null;S.heroSel=false;}};
 $('btnSpeed').onclick=()=>{S.speed=S.speed===1?2:1;$('btnSpeed').textContent=S.speed+'×';$('btnSpeed').classList.toggle('on',S.speed>1);};
 $('btnPause').onclick=togglePause;
 $('btnTornado').onclick=()=>{auInit();castTornado();};
