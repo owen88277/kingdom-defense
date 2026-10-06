@@ -988,10 +988,10 @@ function blit(k,h,flip){const im=IMG[k];if(!im||!im.complete||!im.naturalWidth)r
 // ---------- allies: lion-crest knights, same ink-outline cartoon style ----------
 const STEEL='#c3cad3',STEEL2='#8e979f',GOLDK='#e2b23a',REDK='#c8322a',WOODK='#9a6a3a';
 // ---------- pixel look: characters are drawn small off-screen, then scaled up without smoothing ----------
-const PXC=document.createElement('canvas');PXC.width=128;PXC.height=112;const PXX=PXC.getContext('2d'),PXR=.85,PXAX=64,PXAY=76;
-function pixDraw(fn){const main=ctx;PXX.setTransform(1,0,0,1,0,0);PXX.clearRect(0,0,128,112);PXX.setTransform(PXR,0,0,PXR,PXAX,PXAY);PXX.lineJoin='round';PXX.globalAlpha=1;
+const PXR=1.7,PXW=256,PXH=224,PXAX=128,PXAY=152;const PXC=document.createElement('canvas');PXC.width=PXW;PXC.height=PXH;const PXX=PXC.getContext('2d');
+function pixDraw(fn){const main=ctx;PXX.setTransform(1,0,0,1,0,0);PXX.clearRect(0,0,PXW,PXH);PXX.setTransform(PXR,0,0,PXR,PXAX,PXAY);PXX.lineJoin='round';PXX.globalAlpha=1;
   ctx=PXX;try{fn();}finally{ctx=main;}
-  const sm=main.imageSmoothingEnabled;main.imageSmoothingEnabled=false;main.drawImage(PXC,-PXAX/PXR,-PXAY/PXR,128/PXR,112/PXR);main.imageSmoothingEnabled=sm;}
+  const sm=main.imageSmoothingEnabled;main.imageSmoothingEnabled=false;main.drawImage(PXC,-PXAX/PXR,-PXAY/PXR,PXW/PXR,PXH/PXR);main.imageSmoothingEnabled=sm;}
 // ---------- jointed characters: shoulder, elbow, hip, knee; facing right, feet at y=0 ----------
 const RIGS={
   knight:{limb:STEEL,limb2:STEEL2,leg:STEEL,leg2:STEEL2,boot:STEEL2,torso:'tabard',cape:REDK,head:'helm',shield:'lion',weapon:'sword'},
