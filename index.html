@@ -318,9 +318,9 @@ const LEVELS=[
     [['ogre',3,8,0],['orc',10,1.2,2],['bat',10,1,6],['shaman',6,1.8,10]],
    ]},
   {name:'第二關・怒海',theme:'sea',gold:400,gate:330,heroSpawn:{x:870,y:415},
-   routes:[[[-40,110],[130,110],[210,150],[240,230],[330,260],[440,240],[500,170],[600,120],[720,140],[780,210],[770,290],[830,330],[1000,330]],
-           [[-70,460],[150,460],[300,430],[460,455],[620,480],[780,460],[900,500],[1040,500]]],
-   spots:[[120,195],[300,165],[400,165],[560,215],[650,60],[690,225],[855,250],[180,330],[430,335],[570,345],[700,355],[340,560],[520,580],[700,570],[860,590]],
+   routes:[[[-40,100],[150,100],[300,130],[450,110],[600,140],[700,200],[690,280],[640,340],[520,385],[380,380],[270,410],[250,470],[360,520],[520,510],[680,530],[790,500],[840,440],[860,370],[920,330],[1000,330]]],
+   land:[[0,8],[15,20]],sea:[7,16],
+   spots:[[120,170],[300,200],[450,190],[590,225],[780,140],[790,270],[560,300],[420,305],[290,320],[400,450],[560,450],[700,445],[450,590],[620,600],[870,240],[760,390],[180,410]],
    waves:[
     [['goblin',10,1,0],['ship',1,1,6]],
     [['wolf',8,.9,0],['ship',2,3,4]],
@@ -687,13 +687,12 @@ function paintSea(g){
   for(let i=0;i<500;i++){g.fillStyle=Math.random()<.5?'rgba(20,90,130,.18)':'rgba(140,230,240,.14)';g.beginPath();g.ellipse(rnd(0,W),rnd(0,H),rnd(10,26),rnd(3,7),0,0,7);g.fill();}
   const trace=P=>{g.beginPath();g.moveTo(P[0][0],P[0][1]);for(const q of P.slice(1))g.lineTo(q[0],q[1]);};
   g.lineJoin='round';g.lineCap='round';
-  const lane=LEVEL.routes[1],LR=ROUTES[1];
-  if(lane){trace(lane);g.strokeStyle='rgba(8,55,85,.18)';g.lineWidth=110;g.stroke();trace(lane);g.strokeStyle='rgba(8,50,85,.3)';g.lineWidth=70;g.stroke();
-    trace(lane);g.strokeStyle='rgba(255,255,255,.22)';g.setLineDash([12,16]);g.lineWidth=2;g.stroke();g.setLineDash([]);}
+  const LR=null,LANDS=LEVEL.land.map(([a,b])=>PATH.slice(a,b)),SEA=PATH.slice(LEVEL.sea[0],LEVEL.sea[1]);
+  const pdist=(P,x,y)=>{let m=1e9;for(let i=0;i<P.length-1;i++){const[a0,a1]=P[i],[b0,b1]=P[i+1],dx=b0-a0,dy=b1-a1;let t=((x-a0)*dx+(y-a1)*dy)/(dx*dx+dy*dy);t=Math.max(0,Math.min(1,t));m=Math.min(m,Math.hypot(a0+t*dx-x,a1+t*dy-y));}return m;};
   const near=(R,x,y)=>{let m=1e9;for(let d=0;d<R.total;d+=8){const q=at(d,R);m=Math.min(m,Math.hypot(q.x-x,q.y-y));}return m;};
   const blob={x:905,y:LEVEL.gate+5,rx:95,ry:95};
-  const onLand=(x,y)=>near(ROUTES[0],x,y)<62||SPOTS.some(([sx,sy])=>Math.hypot(sx-x,sy-y)<44)||((x-blob.x)/blob.rx)**2+((y-blob.y)/blob.ry)**2<1;
-  const land=(e,col)=>{trace(PATH);g.strokeStyle=col;g.lineWidth=128+e*2;g.stroke();g.fillStyle=col;
+  const onLand=(x,y)=>LANDS.some(P=>pdist(P,x,y)<62)||SPOTS.some(([sx,sy])=>Math.hypot(sx-x,sy-y)<44)||((x-blob.x)/blob.rx)**2+((y-blob.y)/blob.ry)**2<1;
+  const land=(e,col)=>{for(const P of LANDS){trace(P);g.strokeStyle=col;g.lineWidth=128+e*2;g.stroke();}g.fillStyle=col;
     for(const[x,y] of SPOTS){g.beginPath();g.arc(x,y,46+e,0,7);g.fill();}
     g.beginPath();g.ellipse(blob.x,blob.y,blob.rx+e,blob.ry+e,0,0,7);g.fill();};
   land(20,'rgba(120,225,220,.45)');land(10,'#8fe3d8');land(4,'rgba(255,255,255,.9)');land(0,'#f0d48e');
@@ -701,22 +700,28 @@ function paintSea(g){
   // white wave lines along the shore
   g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=1.6;
   for(let i=0;i<260;i++){const x=rnd(0,W),y=rnd(0,H);if(onLand(x,y))continue;const l=rnd(5,12);g.beginPath();g.moveTo(x-l,y);g.quadraticCurveTo(x,y-3.5,x+l,y);g.stroke();}
-  // wooden boardwalk road
-  trace(PATH);g.strokeStyle='#4a2f19';g.lineWidth=48;g.stroke();
-  trace(PATH);g.strokeStyle='#b07a43';g.lineWidth=42;g.stroke();
-  trace(PATH);g.strokeStyle='rgba(255,220,160,.25)';g.lineWidth=16;g.stroke();
-  for(let d=0;d<TOTAL;d+=7){const q=at(d),nx=-Math.sin(q.ang),ny=Math.cos(q.ang);
+  // magic sea road: the same road keeps going across the water
+  trace(SEA);g.strokeStyle='rgba(150,250,255,.22)';g.lineWidth=78;g.stroke();
+  trace(SEA);g.strokeStyle='#e9fdff';g.lineWidth=50;g.stroke();
+  trace(SEA);g.strokeStyle='#5fd3e0';g.lineWidth=44;g.stroke();
+  trace(SEA);g.strokeStyle='rgba(200,255,255,.55)';g.lineWidth=18;g.stroke();
+  const sea=mkRoute(SEA);
+  for(let d=0;d<sea.total;d+=11){const q=at(d,sea),nx=-Math.sin(q.ang),ny=Math.cos(q.ang),o=rnd(-14,14);
+    g.strokeStyle='rgba(255,255,255,.6)';g.lineWidth=1.4;g.beginPath();g.moveTo(q.x+nx*o-Math.cos(q.ang)*5,q.y+ny*o-Math.sin(q.ang)*5);g.quadraticCurveTo(q.x+nx*o-nx*3,q.y+ny*o-ny*3,q.x+nx*o+Math.cos(q.ang)*5,q.y+ny*o+Math.sin(q.ang)*5);g.stroke();}
+  for(let d=20,k=0;d<sea.total-10;d+=55,k++){const q=at(d,sea),nx=-Math.sin(q.ang),ny=Math.cos(q.ang);
+    for(const sd of [-1,1]){const bx=q.x+nx*27*sd,by=q.y+ny*27*sd;g.beginPath();g.arc(bx,by,4.2,0,7);ink(k%2?'#ffffff':'#e0483a',1.3);g.fillStyle=k%2?'#e0483a':'#fff';g.fillRect(bx-4,by-1,8,2);}}
+  // wooden boardwalk on land
+  for(const P of LANDS){trace(P);g.strokeStyle='#4a2f19';g.lineWidth=48;g.stroke();
+    trace(P);g.strokeStyle='#b07a43';g.lineWidth=42;g.stroke();
+    trace(P);g.strokeStyle='rgba(255,220,160,.25)';g.lineWidth=16;g.stroke();}
+  for(let d=0;d<TOTAL;d+=7){const q=at(d),nx=-Math.sin(q.ang),ny=Math.cos(q.ang);if(!LANDS.some(P=>pdist(P,q.x,q.y)<1))continue;
     g.strokeStyle='rgba(60,35,15,.5)';g.lineWidth=1.2;g.beginPath();g.moveTo(q.x+nx*20,q.y+ny*20);g.lineTo(q.x-nx*20,q.y-ny*20);g.stroke();
     if(d%42<7)for(const sd of [-1,1]){g.beginPath();g.arc(q.x+nx*23*sd,q.y+ny*23*sd,3.2,0,7);ink('#6b4a2b',1.2);}}
-  // harbour pier where the ships dock
-  if(lane){for(const py of [lane[lane.length-1][1]-38,lane[lane.length-1][1]+30]){g.beginPath();g.rect(870,py,100,10);ink('#9a6a3a',1.6);
-    for(let x=874;x<960;x+=8){g.strokeStyle='rgba(40,25,10,.5)';g.lineWidth=1;g.beginPath();g.moveTo(x,py+1);g.lineTo(x,py+9);g.stroke();}
-    for(const x of [880,915,950]){g.beginPath();g.rect(x-3,py+8,6,8);ink('#5a3b22',1.2);}}}
   const ok=(x,y)=>!(x<240&&y>515)&&!(x>815&&y>LEVEL.gate-150&&y<LEVEL.gate+60)&&SPOTS.every(([sx,sy])=>Math.hypot(sx-x,sy-y)>40);
   const items=[];
   for(let i=0;i<900&&items.length<26;i++){const x=rnd(10,W-10),y=rnd(30,H-10);if(!onLand(x,y)||!ok(x,y))continue;const rd=near(ROUTES[0],x,y);
     if(rd>50&&items.every(t=>Math.hypot(t.x-x,t.y-y)>26))items.push({x,y,k:Math.random()<.8?'palm':'barrel'});}
-  for(let i=0;i<600&&items.length<46;i++){const x=rnd(10,W-10),y=rnd(30,H-10);if(onLand(x,y)||!ok(x,y)||(LR&&near(LR,x,y)<75))continue;if(near(ROUTES[0],x,y)<80)continue;
+  for(let i=0;i<600&&items.length<46;i++){const x=rnd(10,W-10),y=rnd(30,H-10);if(onLand(x,y)||!ok(x,y)||false)continue;if(near(ROUTES[0],x,y)<80)continue;
     if(items.every(t=>Math.hypot(t.x-x,t.y-y)>30))items.push({x,y,k:Math.random()<.85?'rock':'wreck'});}
   items.sort((a,b)=>a.y-b.y);
   for(const t of items){const{x,y}=t;
