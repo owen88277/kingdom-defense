@@ -1070,8 +1070,8 @@ function drawShip(e,s0){ // 幽靈海盜船
   ctx.restore();
 }
 let RIGP=0;
-const SPRITE={ship:drawShip,goblin:(e,s,w)=>{ctx.save();ctx.translate(0,12*s);drawRig(RIGS.goblin,{mv:!e.blocker,walk:e.anim,atk:RIGP,seed:e.anim},s*.9);ctx.restore();},wolf:drawOcto,orc:(e,s,w)=>{ctx.save();ctx.translate(0,12*s);drawRig(RIGS.corsair,{mv:!e.blocker,walk:e.anim,atk:RIGP,seed:e.anim},s*.95);ctx.restore();},shaman:(e,s,w)=>{ctx.fillStyle='rgba(150,80,220,.22)';ctx.beginPath();ctx.ellipse(0,10*s,9*s,3.5*s,0,0,7);ctx.fill();ctx.save();ctx.translate(0,12*s);drawRig(RIGS.zombie,{mv:!e.blocker,walk:e.anim*.7,atk:RIGP,seed:e.anim},s*.95);ctx.restore();},bat:drawParrot,ogre:(e,s,w)=>{ctx.save();ctx.translate(0,12*s);drawRig(RIGS.captain,{mv:!e.blocker,walk:e.anim*.8,atk:RIGP,seed:e.anim},s*.85);ctx.restore();}};
-const SPRITE_H={ship:2.4,goblin:1.6,wolf:1.9,orc:1.9,shaman:1.8,bat:1,ogre:2.2}; // head height in units of r
+const SPRITE={ship:drawShip,goblin:(e,s,w)=>{ctx.save();ctx.translate(0,12*s);drawRig(RIGS.goblin,{mv:!e.blocker,walk:e.anim,atk:RIGP,seed:e.anim},s*.9);ctx.restore();},wolf:drawOcto,orc:(e,s,w)=>{ctx.save();ctx.translate(0,12*s);drawRig(RIGS.corsair,{mv:!e.blocker,walk:e.anim,atk:RIGP,seed:e.anim},s*.95);ctx.restore();},shaman:(e,s,w)=>{ctx.fillStyle='rgba(150,80,220,.22)';ctx.beginPath();ctx.ellipse(0,10*s,9*s,3.5*s,0,0,7);ctx.fill();ctx.save();ctx.translate(0,12*s);drawRig(RIGS.zombie,{mv:!e.blocker,walk:e.anim*.7,atk:RIGP,seed:e.anim},s*.95);ctx.restore();},bat:drawParrot,ogre:(e,s,w)=>{ctx.save();ctx.translate(0,12*s);drawRig(RIGS.captain,{mv:!e.blocker,walk:e.anim*.8,atk:RIGP,seed:e.anim},s*.64);ctx.restore();}};
+const SPRITE_H={ship:2.4,goblin:1.6,wolf:1.9,orc:1.9,shaman:1.8,bat:1,ogre:1.75}; // head height in units of r
 function drawEnemy(e){
   const D=e.D,r=D.r,s=r/10,w=Math.sin(e.anim);
   ctx.save();ctx.translate(e.x,e.y);
@@ -1109,14 +1109,14 @@ const PXR=1.7,PXW=256,PXH=224,PXAX=128,PXAY=152;const PXC=document.createElement
 function pixDraw(fn){fn();} // characters draw straight onto the map (smooth cartoon look)
 // ---------- jointed characters: shoulder, elbow, hip, knee; facing right, feet at y=0 ----------
 const RIGS={
-  knight:{limb:STEEL,limb2:STEEL2,leg:STEEL,leg2:STEEL2,boot:STEEL2,torso:'tabard',cape:REDK,head:'helm',shield:'lion',weapon:'sword'},
+  knight:{kneeCap:STEEL,elbowCap:STEEL,gauntlet:STEEL2,mail:true,limb:STEEL,limb2:STEEL2,leg:STEEL,leg2:STEEL2,boot:STEEL2,torso:'tabard',cape:REDK,head:'helm',shield:'lion',weapon:'sword'},
   guard:{limb:'#4a7cc0',limb2:'#365f99',leg:'#6b4a2b',leg2:'#55391f',boot:'#3d2818',hand:'#f0c39a',torso:'tunic',head:'kettle',shield:'round',weapon:'short'},
   sailor:{limb:BONE,limb2:BONE2,leg:BONE,leg2:BONE2,torso:'rags',head:'bandana',weapon:'cutlass'},
-  corsair:{limb:BONE,limb2:BONE2,leg:'#2a2420',leg2:'#2a2420',boot:'#3a2c22',torso:'coat',head:'captain',shield:'skull',weapon:'cutlass',pauldron:STEEL2},
+  corsair:{cuff:'#3a2c22',limb:BONE,limb2:BONE2,leg:'#2a2420',leg2:'#2a2420',boot:'#3a2c22',torso:'coat',head:'captain',shield:'skull',weapon:'cutlass',pauldron:STEEL2},
   militia:{limb:'#5a8f3a',limb2:'#466f2d',leg:'#6b4a2b',leg2:'#55391f',boot:'#3d2818',hand:'#f0c39a',torso:'tunic',head:'kettle',shield:'round',weapon:'short'},
   zombie:{limb:ZOMB,limb2:ZOMB2,leg:'#6d4a2c',leg2:'#5a3c22',hand:ZOMB,torso:'zrag',head:'zombie',reach:true},
   goblin:{limb:'#86c23e',limb2:'#669e2c',leg:'#86c23e',leg2:'#669e2c',boot:'#c8b07e',hand:'#86c23e',torso:'gleather',head:'goblin',weapon:'cutlass'},
-  captain:{limb:BONE,limb2:BONE2,leg:'#2a2420',leg2:'#2a2420',boot:'#3a2c22',torso:'coat',head:'captain',shield:'skull',weapon:'cutlass',pauldron:STEEL2,spikes:true,cape:'#1f1b18'},
+  captain:{cuff:'#3a2c22',ring:true,limb:BONE,limb2:BONE2,leg:'#2a2420',leg2:'#2a2420',boot:'#3a2c22',torso:'coat',head:'captain',shield:'skull',weapon:'cutlass',pauldron:STEEL2,spikes:true,cape:'#1f1b18'},
 };
 const seg=(P,th,L)=>[P[0]+Math.sin(th)*L,P[1]+Math.cos(th)*L]; // angle 0 = straight down, + = toward the front
 function rigPose(o){
@@ -1169,10 +1169,18 @@ function rigTorso(R,q){
   const col=st==='tabard'?STEEL:st==='tunic'?R.limb:'#2b2622';
   ctx.beginPath();ctx.moveTo(-4.4,-24.5);ctx.quadraticCurveTo(0,-26,4.6,-24.5);ctx.lineTo(4,-13);ctx.lineTo(4.6,-9.5);ctx.lineTo(-4.4,-9.5);ctx.lineTo(-3.8,-13);ctx.closePath();fs(col,1.5);
   if(st==='tabard'){ctx.beginPath();ctx.moveTo(-2.4,-21);ctx.lineTo(3,-21);ctx.lineTo(3.2,-8);ctx.lineTo(.3,-6.6);ctx.lineTo(-2.6,-8);ctx.closePath();fs(REDK,1.1);
-    ctx.fillStyle='#f3efe6';ctx.fillRect(-.4,-21,1.6,13.5);ctx.fillStyle=GOLDK;ctx.beginPath();ctx.arc(.5,-23,1.3,0,7);ctx.fill();}
+    ctx.fillStyle='#f3efe6';ctx.fillRect(-.4,-21,1.6,13.5);ctx.strokeStyle=GOLDK;ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(-2.4,-21);ctx.lineTo(3,-21);ctx.moveTo(-2.5,-8.3);ctx.lineTo(.3,-7);ctx.lineTo(3.1,-8.3);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-1.4,-19.6);ctx.lineTo(2.4,-19.6);ctx.lineTo(2.4,-17);ctx.quadraticCurveTo(2.2,-15,.5,-14.6);ctx.quadraticCurveTo(-1.2,-15,-1.4,-17);ctx.closePath();fs(GOLDK,.8);ctx.fillStyle='#8a5a1a';ctx.beginPath();ctx.arc(.5,-17.6,.9,0,7);ctx.fill();
+    ctx.beginPath();ctx.ellipse(.5,-24.4,3.8,1.4,0,0,7);fs(STEEL2,1);ctx.fillStyle=GOLDK;ctx.beginPath();ctx.arc(.5,-23,1,0,7);ctx.fill();}
   else if(st==='tunic'){ctx.strokeStyle='rgba(20,40,80,.45)';ctx.lineWidth=.7;ctx.beginPath();for(const x of [-2,0.3,2.6]){ctx.moveTo(x,-23.5);ctx.lineTo(x,-10.5);}ctx.stroke();
     ctx.fillStyle='#d9c08a';for(let i=0;i<3;i++)ctx.fillRect(.6,-22+i*3.2,1.1,1.1);}
-  else{ribs(.4,-19,.55);ctx.strokeStyle='#d9a93a';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(-4.2,-10.2);ctx.lineTo(4.4,-10.2);ctx.stroke();}
+  else{ribs(.4,-19,.55);ctx.strokeStyle='#d9a93a';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(-4.2,-10.2);ctx.lineTo(4.4,-10.2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(-4.2,-24.4);ctx.lineTo(-1.6,-24.6);ctx.lineTo(-2.4,-15);ctx.lineTo(-4,-14.6);ctx.closePath();fs('#3a322c',1);ctx.beginPath();ctx.moveTo(4.6,-24.4);ctx.lineTo(2.6,-24.6);ctx.lineTo(3.4,-15);ctx.lineTo(4.2,-14.6);ctx.closePath();fs('#3a322c',1);
+    ctx.strokeStyle='#d9a93a';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(-1.6,-24.6);ctx.lineTo(-2.4,-15);ctx.moveTo(2.6,-24.6);ctx.lineTo(3.4,-15);ctx.stroke();
+    ctx.fillStyle='#f0e6d2';ctx.beginPath();for(let i=0;i<3;i++){ctx.moveTo(-1,-25+i*1.6);ctx.lineTo(2,-25+i*1.6);ctx.lineTo(.5,-23+i*1.6);}ctx.fill();
+    ctx.fillStyle='#e8c050';for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(-3.2,-22+i*2.6,.55,0,7);ctx.arc(3.8,-22+i*2.6,.55,0,7);ctx.fill();}
+    ctx.strokeStyle='#5a3a20';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(4.4,-24);ctx.lineTo(-4,-14.8);ctx.stroke();ctx.fillStyle='#c9ced3';ctx.beginPath();ctx.arc(.2,-19.3,.7,0,7);ctx.fill();
+    ctx.beginPath();ctx.moveTo(-4.6,-15.6);ctx.lineTo(-7,-17);ctx.lineTo(-7.4,-15.6);ctx.lineTo(-4.6,-14.4);ctx.closePath();fs('#6b4a2b',.9);}
   ctx.beginPath();ctx.rect(-4.3,-14.2,8.8,1.8);fs('#6b4a2b',1);ctx.beginPath();ctx.rect(-.5,-14.4,2,2.2);fs(st==='coat'?'#b9c0c6':GOLDK,.8);
   if(R.pauldron)for(const[x,c] of [[-3.2,R.pauldron],[3.4,STEEL]]){ctx.beginPath();ctx.ellipse(x,-24,3,2.2,0,Math.PI,0);ctx.closePath();fs(c,1.2);
     if(R.spikes){ctx.beginPath();ctx.moveTo(x-1,-25.6);ctx.quadraticCurveTo(x,-30,x+1.6,-31);ctx.lineTo(x+1.2,-25.6);ctx.closePath();fs('#ece3cf',1);}}
@@ -1206,13 +1214,15 @@ function rigHead(R,q){
     ear(x+3.6,y-1.2,1,'#86c23e');}
   else if(h==='bandana'){skull(x,y,.78);bandana(x,y,.78);}
   else if(h==='tricorn'){skull(x,y,.8);tricorn(x,y-3.4,.78);}
-  else{ctx.beginPath();ctx.moveTo(x-3.4,y+1);ctx.quadraticCurveTo(x-4,y+8,x,y+10);ctx.quadraticCurveTo(x+4,y+8,x+4,y+1);ctx.closePath();fs('#4a4744',1.2);
+  else{ctx.beginPath();ctx.moveTo(x-3.2,y+2);ctx.quadraticCurveTo(x-3.4,y+6,x+.4,y+7.4);ctx.quadraticCurveTo(x+3.6,y+6,x+4,y+2);ctx.closePath();fs('#5a5450',1.1);ctx.strokeStyle='#3a3532';ctx.lineWidth=.5;ctx.beginPath();for(let i=-1;i<=2;i++){ctx.moveTo(x+i*1.2,y+3.5);ctx.lineTo(x+i*1,y+6.4);}ctx.stroke();
     skull(x,y,.85,'#ff2a1f',true);ctx.beginPath();ctx.moveTo(x-2,y-5);ctx.quadraticCurveTo(x-9,y-11,x-6,y-14);ctx.quadraticCurveTo(x-4,y-9,x,y-6);ctx.closePath();fs('#e0a530',1);tricorn(x,y-3.8,.85);}
 }
 function drawRig(R,o,k){
   const q=rigPose(o),hip=[0,-11];
   ctx.save();ctx.scale(k,k);ctx.lineJoin='round';ctx.translate(0,-q.bob);LWK=1.35;
   const leg=(th,kn,c1,c2)=>{const K=seg(hip,th,5.6),F=seg(K,th-kn,5.4);limb(hip[0],hip[1],K[0],K[1],3.6,c1);limb(K[0],K[1],F[0],F[1],3.1,c2);
+    if(R.cuff){const C=seg(K,th-kn,1.6);ctx.save();ctx.translate(C[0],C[1]);ctx.rotate(-(th-kn));ctx.beginPath();ctx.moveTo(-2.6,-1);ctx.lineTo(2.8,-1.4);ctx.lineTo(2.2,1.6);ctx.lineTo(-2.1,1.6);ctx.closePath();fs(R.cuff,1);ctx.restore();ctx.beginPath();ctx.moveTo(K[0]+Math.sin(th-kn)*3,K[1]+3);ctx.lineTo(F[0],F[1]);ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1;ctx.stroke();}
+    if(R.kneeCap){ctx.beginPath();ctx.ellipse(K[0]+.5,K[1],2.2,1.9,0,0,7);fs(R.kneeCap,.9);ctx.fillStyle=GOLDK;ctx.beginPath();ctx.arc(K[0]+.7,K[1],.6,0,7);ctx.fill();}
     ctx.beginPath();ctx.ellipse(F[0]+1.3,F[1]+.3,R.boot?2.9:2.2,R.boot?1.6:1.1,0,0,7);fs(R.boot||c2,1.1);};
   const upper=()=>{ctx.translate(hip[0],hip[1]);ctx.rotate(q.lean);ctx.translate(-hip[0],-hip[1]);};
   if(R.cape){ctx.save();upper();const f=q.m?Math.sin(q.ph*.5)*1.5:Math.sin(performance.now()/500)*.6;
@@ -1220,13 +1230,19 @@ function drawRig(R,o,k){
   leg(q.legB,q.kneeB,R.leg2,R.leg2);
   // back arm with shield (or empty hand)
   ctx.save();upper();const SB=[-1.6,-22.5],EB=seg(SB,q.a2,5.2),HB=seg(EB,q.a2+(R.reach?.2:1.35),4.6);
-  limb(SB[0],SB[1],EB[0],EB[1],2.8,R.limb2);limb(EB[0],EB[1],HB[0],HB[1],2.5,R.limb2);ctx.restore();
+  limb(SB[0],SB[1],EB[0],EB[1],2.8,R.limb2);limb(EB[0],EB[1],HB[0],HB[1],2.5,R.limb2);if(R.elbowCap){ctx.beginPath();ctx.arc(EB[0],EB[1],1.6,0,7);fs(STEEL2,.8);}ctx.restore();
   leg(q.legF,q.kneeF,R.leg,R.leg2);
-  ctx.save();upper();rigTorso(R,q);
+  ctx.save();upper();
+  if(R.torso==='coat'){const sw=q.m?Math.sin(q.ph)*1.2:0;ctx.beginPath();ctx.moveTo(-4.4,-13);ctx.quadraticCurveTo(-6.6,-8,-7.6-sw,-3.4);ctx.lineTo(-4.4,-4.4);ctx.lineTo(-2,-3.2);ctx.lineTo(-.6,-12);ctx.closePath();fs('#2b2622',1.3);
+    ctx.beginPath();ctx.moveTo(4.6,-13);ctx.quadraticCurveTo(6.4,-8,6.8+sw,-4);ctx.lineTo(3.6,-5);ctx.lineTo(1.6,-12);ctx.closePath();fs('#332c27',1.3);
+    ctx.strokeStyle='#d9a93a';ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(-7.4-sw,-3.8);ctx.lineTo(-4.4,-4.8);ctx.lineTo(-2.2,-3.6);ctx.moveTo(6.6+sw,-4.4);ctx.lineTo(3.7,-5.4);ctx.stroke();}
+  if(R.mail){ctx.beginPath();ctx.moveTo(-4.6,-11);ctx.lineTo(4.8,-11);ctx.lineTo(5.2,-6.6);ctx.lineTo(-5,-6.6);ctx.closePath();fs('#a9b1b9',1.2);
+    ctx.strokeStyle='rgba(60,70,80,.55)';ctx.lineWidth=.55;ctx.beginPath();for(let r=0;r<3;r++)for(let c=0;c<6;c++){const xx=-4.2+c*1.7+(r%2)*.85,yy=-10.2+r*1.3;ctx.moveTo(xx+.7,yy);ctx.arc(xx,yy,.7,0,Math.PI);}ctx.stroke();}
+  rigTorso(R,q);
   ctx.fillStyle='rgba(255,255,255,.22)';ctx.beginPath();ctx.ellipse(1.6,-20,1.6,3.4,.2,0,7);ctx.fill();
   ctx.fillStyle='rgba(0,0,0,.16)';ctx.beginPath();ctx.ellipse(-3,-15,1.6,4.4,0,0,7);ctx.fill();
   if(R.shield)rigShield(R,[HB[0]+2,HB[1]]);
-  ctx.save();ctx.translate(1,-25.5);ctx.scale(1.45,1.45);ctx.translate(-1,25.5);LWK=.75;rigHead(R,q);LWK=1.35;
+  ctx.save();ctx.translate(1,-25.5);ctx.scale(1.32,1.32);ctx.translate(-1,25.5);LWK=.8;rigHead(R,q);LWK=1.35;
   ctx.fillStyle='rgba(255,255,255,.3)';ctx.beginPath();ctx.ellipse(2.6,-33,1.4,.9,-.4,0,7);ctx.fill();ctx.restore();
   const SF=[2,-22.5],EF=seg(SF,q.a1,5.4),fa=q.a1+q.e1,HF=seg(EF,fa,5);
   const b=o.spin?fa:fa+(q.A>0?1.25-q.A*.85:1.25+q.A*1.5);
@@ -1234,8 +1250,8 @@ function drawRig(R,o,k){
     ctx.beginPath();ctx.arc(SF[0],SF[1],15,-.9,-.9+Math.min(1,kk*2)*2.4);ctx.stroke();ctx.restore();}
   limb(SF[0],SF[1],EF[0],EF[1],2.9,R.limb);
   rigWeapon(R,HF,b,k);
-  limb(EF[0],EF[1],HF[0],HF[1],2.6,R.limb);
-  ctx.beginPath();ctx.arc(HF[0],HF[1],1.6,0,7);fs(R.hand||R.limb2,1);
+  limb(EF[0],EF[1],HF[0],HF[1],2.6,R.limb);if(R.elbowCap){ctx.beginPath();ctx.arc(EF[0],EF[1],1.8,0,7);fs(R.elbowCap,.9);ctx.fillStyle=GOLDK;ctx.beginPath();ctx.arc(EF[0],EF[1],.5,0,7);ctx.fill();}
+  ctx.beginPath();ctx.arc(HF[0],HF[1],R.gauntlet?1.9:1.6,0,7);fs(R.gauntlet||R.hand||R.limb2,1);if(R.ring){ctx.fillStyle='#ffd34a';ctx.beginPath();ctx.arc(HF[0]+.6,HF[1]-.6,.55,0,7);ctx.fill();}
   LWK=1;ctx.restore();ctx.restore();
 }
 function knight(s,o){ // facing right, feet at y≈+10*s
@@ -1286,15 +1302,15 @@ function drawHero(){
     ctx.save();ctx.globalAlpha=.25;ctx.strokeStyle='#9fe8ff';ctx.setLineDash([3,6]);ctx.beginPath();ctx.arc(h.guard.x,h.guard.y,HERO.guard,0,7);ctx.stroke();ctx.restore();}
   if(h.cmd){ctx.save();ctx.strokeStyle='rgba(159,232,255,.5)';ctx.setLineDash([4,6]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(h.x,h.y);ctx.lineTo(h.cmd.x,h.cmd.y);ctx.stroke();ctx.restore();}
   ctx.save();ctx.translate(h.x,h.y);
-  ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(0,11,13,4.5,0,0,7);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,.3)';ctx.beginPath();ctx.ellipse(0,11,10,3.6,0,0,7);ctx.fill();
   pixDraw(()=>{
   if(h.spin){const c=Math.cos(h.spin*Math.PI*6);ctx.scale(Math.abs(c)<.15?.15*Math.sign(c||1):c,1);}
   if(h.face<0)ctx.scale(-1,1);
   ctx.lineJoin='round';
-  ctx.translate(0,12);drawRig(RIGS.knight,{mv,walk:h.walk,spin:h.spin>0,atk:h.swing>0?1-h.swing/.4:0},1.3);ctx.translate(0,-12);});
-  if(L>=2){ctx.fillStyle='rgba(255,215,90,.9)';for(let i=0;i<L-1;i++){ctx.beginPath();ctx.arc(-6+i*6,-52,2,0,7);ctx.fill();}}
+  ctx.translate(0,12);drawRig(RIGS.knight,{mv,walk:h.walk,spin:h.spin>0,atk:h.swing>0?1-h.swing/.4:0},1.02);ctx.translate(0,-12);});
+  if(L>=2){ctx.fillStyle='rgba(255,215,90,.9)';for(let i=0;i<L-1;i++){ctx.beginPath();ctx.arc(-6+i*6,-44,2,0,7);ctx.fill();}}
   ctx.restore();
-  const hp=h.hp/HERO.hp[L],by=h.y-46;
+  const hp=h.hp/HERO.hp[L],by=h.y-39;
   ctx.fillStyle='rgba(0,0,0,.65)';ctx.fillRect(h.x-14,by,28,5);ctx.fillStyle='#4fd1ff';ctx.fillRect(h.x-13,by+1,26*hp,3);
   ctx.fillStyle='#1d2a3a';ctx.beginPath();ctx.arc(h.x-19,by+2.5,6,0,7);ctx.fill();
   ctx.fillStyle='#9fe8ff';ctx.font='700 9px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(L+1,h.x-19,by+3);
