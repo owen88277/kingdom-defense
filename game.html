@@ -80,6 +80,15 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .card details.howto{text-align:left;font-size:13px}
 .card details.howto summary{cursor:pointer;color:#6b2a14;font-weight:700}
 @media (max-width:640px),(max-height:520px){.card.side h1{font-size:22px}.card details.howto ul{display:block}}
+#devBtn{position:absolute;right:8px;bottom:8px;z-index:80;width:34px;height:34px;border-radius:50%;border:2px solid #e8b84a;background:rgba(30,18,10,.75);color:#ffd76a;font:700 16px/1 sans-serif;cursor:pointer;padding:0}
+#devPanel{position:absolute;right:8px;bottom:50px;z-index:81;width:min(300px,calc(100% - 16px));max-height:calc(100% - 60px);overflow:auto;box-sizing:border-box;padding:12px;border-radius:12px;border:2px solid #e8b84a;background:rgba(30,18,10,.94);color:#f1e2c0;font:600 13px/1.4 "Noto Sans TC",sans-serif}
+#devPanel h3{margin:0 0 8px;color:#ffd76a;font-size:15px}
+#devPanel .dl{margin:10px 0 4px;color:#c7b38f;font-size:12px}
+#devPanel .dg{display:flex;flex-wrap:wrap;gap:6px}
+#devPanel button{min-width:34px;min-height:32px;padding:4px 9px;border-radius:7px;border:1px solid #7a5a36;background:#5a3e28;color:#fff;font:700 13px/1 sans-serif;cursor:pointer}
+#devPanel button:active{background:#7a5a36}
+#devPanel input[type=number]{width:90px;min-height:30px;box-sizing:border-box;border-radius:7px;border:1px solid #7a5a36;background:#140c06;color:#fff;padding:0 6px;font:700 14px sans-serif}
+#devPanel label{display:flex;align-items:center;gap:6px;cursor:pointer}
 .game:not([style*="width"]){width:min(calc(100vw - 16px),calc((100vh - 16px)*1.6));aspect-ratio:16/10}
 #loadmsg{position:absolute;inset:0;z-index:99;display:flex;align-items:center;justify-content:center;background:#2a1a0e;color:#f1e2c0;font:700 22px/1.4 sans-serif;text-align:center}
 @media (prefers-reduced-motion: reduce){*{transition:none!important}}
@@ -91,6 +100,19 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <div class="game" id="game">
   <div id="loadmsg">王國防線<br>載入中…</div>
   <canvas id="cv"></canvas>
+  <button id="devBtn" title="開發者工具" aria-label="開發者工具">🛠</button>
+  <div id="devPanel" hidden>
+    <h3>開發者工具</h3>
+    <label><input type="checkbox" id="devUnlock"> 全部關卡解鎖</label>
+    <div class="dl">直接進入關卡</div><div class="dg" id="devLv"></div>
+    <div class="dl">金錢（目前 <span id="devGoldNow">0</span>）</div>
+    <div class="dg"><input type="number" id="devGold" min="0" step="100" value="5000"><button id="devGoldSet">設定</button><button id="devGold1k">+1000</button></div>
+    <div class="dl">戰鬥</div>
+    <div class="dg"><button id="devLast">跳到最後一波</button><button id="devLives">生命補滿</button></div>
+    <div class="dl">進度</div>
+    <div class="dg"><button id="devReset">清除過關紀錄</button><button id="devClose">關閉</button></div>
+  </div>
+
   <div class="hud">
     <div class="stats">
       <div class="pill"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 17s-7-4.3-7-9.2A3.8 3.8 0 0 1 10 5.6a3.8 3.8 0 0 1 7 2.2C17 12.7 10 17 10 17z" fill="#ff5a4a" stroke="#2a1208" stroke-width="1.6"/><circle cx="7" cy="8" r="1.4" fill="#ffc2b8"/></svg><b id="sLives">20</b></div>
@@ -2322,7 +2344,7 @@ document.querySelectorAll('.hrb').forEach(b=>b.onclick=()=>{sfx('click');chooseH
 const PROG_KEY='td-progress';
 function loadStars(){try{return JSON.parse(localStorage.getItem(PROG_KEY)||'{}')||{};}catch(e){return {};}}
 function saveStars(i,n){const p=loadStars();if(!(p[i]>=n))p[i]=n;try{localStorage.setItem(PROG_KEY,JSON.stringify(p));}catch(e){}buildMap();}
-function unlocked(){const p=loadStars();let u=0;while(u<LEVELS.length-1&&p[u])u++;return u;}
+function unlocked(){if(DEV_UNLOCK())return LEVELS.length-1;const p=loadStars();let u=0;while(u<LEVELS.length-1&&p[u])u++;return u;}
 function buildMap(){
   const wm=$('wmap'),p=loadStars(),u=unlocked();
   wm.querySelectorAll('.node').forEach(n=>n.remove());
@@ -2378,6 +2400,25 @@ $('btnStartFs').onclick=()=>{setFs(true);$('btnStart').click();};
 addEventListener('resize',fit);
 new ResizeObserver(()=>{resize();}).observe(cv);
 fit();
+
+// ---------- developer tools (Owen's testing panel) ----------
+function DEV_UNLOCK(){try{return localStorage.getItem('td-dev-unlock')==='1';}catch(e){return false;}}
+(function(){
+  const P=$('devPanel');
+  const refresh=()=>{$('devUnlock').checked=DEV_UNLOCK();$('devGoldNow').textContent=S?S.gold:0;};
+  $('devBtn').onclick=e=>{e.stopPropagation();P.hidden=!P.hidden;if(!P.hidden)refresh();};
+  P.addEventListener('pointerdown',e=>e.stopPropagation());P.addEventListener('click',e=>e.stopPropagation());
+  $('devClose').onclick=()=>{P.hidden=true;};
+  $('devUnlock').onchange=e=>{try{localStorage.setItem('td-dev-unlock',e.target.checked?'1':'0');}catch(_){}buildMap();};
+  const lv=$('devLv');LEVELS.forEach((L,i)=>{const b=document.createElement('button');b.textContent=i+1;b.title=L.name;
+    b.onclick=()=>{auInit();chooseLevel(i);buildMap();$('ovEnd').hidden=true;$('ovStart').hidden=true;if(S.paused)togglePause();P.hidden=true;toast&&toast('第 '+(i+1)+' 關：'+L.name);};lv.appendChild(b);});
+  const setGold=g=>{S.gold=Math.max(0,Math.floor(g));updateHud();refresh();};
+  $('devGoldSet').onclick=()=>setGold(+$('devGold').value||0);
+  $('devGold1k').onclick=()=>setGold(S.gold+1000);
+  $('devLives').onclick=()=>{S.lives=20;updateHud();};
+  $('devLast').onclick=()=>{if(S.over)return;S.queue=[];S.started=true;S.countdown=-1;S.wave=Math.max(S.wave,WAVES.length-1);startWave();P.hidden=true;};
+  $('devReset').onclick=()=>{try{localStorage.removeItem(PROG_KEY);localStorage.setItem('td-dev-unlock','0');}catch(_){}refresh();buildMap();};
+})();
 
 setLevel(Math.min(unlocked(),LEVELS.length-1));reset();buildMap();resize();{const lm=document.getElementById('loadmsg');if(lm)lm.remove();}requestAnimationFrame(frame);
 })();
