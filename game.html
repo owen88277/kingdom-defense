@@ -346,7 +346,7 @@ const ENEMIES={
   shaman:{name:'獨眼海盜',hp:75,spd:42,armor:0,mres:.6,gold:16,lives:1,r:11,col:'#7a3f9a',dmg:4},
   ship:{name:'骷髏海盜船',hp:100,spd:85,armor:.15,mres:0,gold:18,lives:1,r:16,col:'#5a3b22',naval:true,dmg:0},
   bat:{name:'海盜鸚鵡',hp:42,spd:66,armor:0,mres:0,gold:12,lives:1,r:10,col:'#3b2f4a',flying:true,dmg:0},
-  robot:{name:'圓山機甲',hp:7000,spd:13,armor:.3,mres:.3,gold:400,lives:10,r:26,col:'#b33',dmg:0},
+  robot:{name:'圓山機甲',hp:3000,spd:13,armor:.3,mres:.3,gold:400,lives:10,r:26,col:'#b33',dmg:0},
   ogre:{name:'亡靈船長',hp:950,spd:26,armor:.3,mres:0,gold:120,lives:5,r:20,col:'#a0784a',dmg:18},
 };
 const TOWERS={
@@ -2144,8 +2144,9 @@ function drawRig(x,y,sc,o){
   g.drawImage(P.legL,0,-lL);g.drawImage(P.legR,0,-lR);
   g.drawImage(P.torso,0,bob);
   const arm=(img,px,py,a)=>{g.save();g.translate(px,py+bob);g.rotate(a);g.translate(-px,-py);g.drawImage(img,0,0);g.restore();};
-  arm(P.armL,62,150,Math.sin(w)*.09+(o.raise||0)*-.5);arm(P.armR,222,150,-Math.sin(w)*.09-st*.25);
-  if(oc){g.globalCompositeOperation='source-atop';g.fillStyle=`rgba(255,255,255,${o.flash})`;g.fillRect(0,-PAD,BW,BH+PAD);ctx.drawImage(oc,0,-PAD);}
+  arm(P.armL,62,150,Math.sin(w)*.09+(o.raise||0)*-.5);const pu=o.punch||0,pa=pu<.55?-2.3*Math.sin(pu/.55*Math.PI/2):pu<.7?-2.3+1.4*(pu-.55)/.15:-0.9*(1-(pu-.7)/.3);
+  arm(P.armR,222,150,pu?pa:-Math.sin(w)*.09-st*.25);
+  if(oc){g.globalCompositeOperation='source-atop';g.fillStyle=o.tint?`rgba(255,40,20,${o.flash})`:`rgba(255,255,255,${o.flash})`;g.fillRect(0,-PAD,BW,BH+PAD);ctx.drawImage(oc,0,-PAD);}
   if(o.eye){ctx.globalCompositeOperation='lighter';const gr=ctx.createRadialGradient(140,98+bob,0,140,98+bob,26);gr.addColorStop(0,`rgba(255,80,60,${o.eye})`);gr.addColorStop(1,'rgba(255,0,0,0)');ctx.fillStyle=gr;ctx.beginPath();ctx.arc(140,98+bob,26,0,7);ctx.fill();}
   ctx.restore();
 }
@@ -2171,7 +2172,8 @@ function drawHotelBoss(){
 }
 function drawRobot(e){
   const B=S.hb,st=e.stompT>0?Math.sin((1-e.stompT/.6)*Math.PI):0;
-  drawRig(e.x,e.y,RB_SC,{walk:e.blocker?0:e.anim*.45,stomp:st,face:Math.cos(e.ang)<-.1?-1:1,flash:e.flash>0?.2:0,eye:e.laserT>0?1:.35});
+  const pu=e.punchT>0?1-e.punchT/.9:0,ang=e.angry?.22+.12*Math.sin(performance.now()/120):0;
+  drawRig(e.x,e.y,RB_SC,{walk:e.blocker||pu?0:e.anim*.45,stomp:st,punch:pu,face:pu?e.punchFace:Math.cos(e.ang)<-.1?-1:1,flash:e.flash>0?.2:ang,tint:!(e.flash>0)&&e.angry,eye:e.laserT>0||e.angry?1:.35});
 }
 function updateHotelBoss(dt){
   hbInit();const B=S.hb;if(!B)return;B.t+=dt;
@@ -2191,24 +2193,43 @@ function updateHotelBoss(dt){
     if(B.t>4*HB_STAGE+1.8){B.ph='jump';B.t=0;const d=LEVEL.bossLand?nearestD(...LEVEL.bossLand):120;const p=at(d);B.land=[p.x,p.y];B.landD=d;sfx('whoosh');}
   }else if(B.ph==='jump'){
     if(B.t>=1.8){B.ph='walk';B.t=0;const[x,y]=B.land;
-      spawn('robot');const e=S.enemies[S.enemies.length-1];e.d=B.landD;e.off=0;e.x=x;e.y=y;e.laserCd=3;e.stompCd=1.5;e.stompT=0;e.laserT=0;
+      spawn('robot');const e=S.enemies[S.enemies.length-1];e.d=B.landD;e.off=0;e.x=x;e.y=y;e.laserCd=3;e.stompCd=1.5;e.stompT=0;e.laserT=0;e.punchCd=7;e.punchT=0;e.angry=false;
       S.shake=.6;sfx('boom',1.6);S.fx.push({k:'boom',x,y,r:70,t:0,life:.6});S.fx.push({k:'ring',x,y,t:0,life:.8,col:'#ffd76a'});
       for(const u of [...S.soldiers,S.hero,S.hero&&S.hero.bear])if(u&&!u.dead&&Math.hypot(u.x-x,u.y-y)<70)bossHit(u,60);}
   }else if(B.ph==='walk'){
     const e=bossRobot();
     if(!e){B.ph='over';return;}
     e.atkCd=99;e.stompT=Math.max(0,e.stompT-dt);e.laserT=Math.max(0,e.laserT-dt);
+    const K=e.angry?.5:1;
+    if(!e.angry&&e.hp<e.maxHp/3){e.angry=true;S.shake=.6;sfx('horn');floatText(e.x,e.y-210,'圓山機甲 生氣了！','#ff5a3a');
+      S.fx.push({k:'ring',x:e.x,y:e.y,t:0,life:.8,col:'#ff4a2a'});e.stompCd=Math.min(e.stompCd,.5);e.laserCd=Math.min(e.laserCd,1);e.punchCd=Math.min(e.punchCd,.5);}
+    if(e.angry&&!e.blocker&&!(e.punchT>0))e.d+=e.D.spd*.25*dt;
+    if(e.angry&&Math.random()<dt*4)S.fx.push({k:'poof',x:e.x+rnd(-25,25),y:e.y-rnd(170,200),t:0,life:.6,r:9});
+    // punch: smash the nearest tower in reach; it explodes and is gone
+    e.punchCd-=dt;
+    if(e.punchT>0){e.punchT-=dt;if(e.punchTw&&!e.punchHit&&e.punchT<=.9*.32){e.punchHit=true;smashTower(e.punchTw);}}
+    else if(e.punchCd<=0){let tw=null,bd=95;for(const t of S.towers){const q=Math.hypot(t.x-e.x,(t.y-e.y)*1.3);if(q<bd){bd=q;tw=t;}}
+      if(tw){e.punchCd=20*K;e.punchT=.9;e.punchTw=tw;e.punchHit=false;e.punchFace=tw.x>=e.x?1:-1;sfx('whoosh');}else e.punchCd=.5;}
     const near=[...S.soldiers,S.hero,S.hero&&S.hero.bear].filter(u=>u&&!u.dead&&!u.gone&&Math.hypot(u.x-e.x,u.y-e.y)<58);
     e.stompCd-=dt;
-    if(near.length&&e.stompCd<=0){e.stompCd=2.4;e.stompT=.6;e.stompHit=.3;}
+    if(near.length&&e.stompCd<=0&&!(e.punchT>0)){e.stompCd=2.4*K;e.stompT=.6;e.stompHit=.3;}
     if(e.stompHit>0&&(e.stompHit-=dt)<=0){S.shake=.35;sfx('boom',1.3);S.fx.push({k:'ring',x:e.x,y:e.y,t:0,life:.6,col:'#e8d3a0'});S.fx.push({k:'poof',x:e.x,y:e.y,t:0,life:.5,r:22});
       for(const u of near)bossHit(u,55);}
     e.laserCd-=dt;
     if(e.laserCd<=0){let tw=null,bd=300;for(const t of S.towers){const q=dist(t,e);if(q<bd&&!(t.stun>0)){bd=q;tw=t;}}
-      if(tw){e.laserCd=8;e.laserT=.9;tw.stun=3.5;const sc=RB_SC,f=Math.cos(e.ang)<-.1?-1:1;
+      if(tw){e.laserCd=8*K;e.laserT=.9;tw.stun=3.5;const sc=RB_SC,f=Math.cos(e.ang)<-.1?-1:1;
         B.beam={x1:e.x+(140-BOSSART.W/2)*sc*f,y1:e.y+(98-BOSSART.H)*sc,tw,t:.9};sfx('magicHit');floatText(tw.x,tw.y-70,'癱瘓！','#ff8a7a');}
       else e.laserCd=1;}
   }else if(B.ph==='dying'){if(B.t>2)B.ph='over';}
+}
+function smashTower(tw){
+  if(!S.towers.includes(tw))return;
+  for(const s of tw.soldiers||[]){releaseTarget(s);s.gone=true;}
+  S.soldiers=S.soldiers.filter(s=>!s.gone);S.towers=S.towers.filter(t=>t!==tw);tw.spot.tower=null;if(S.sel===tw)S.sel=null;
+  S.shake=.7;sfx('boom',1.6);
+  for(let i=0;i<5;i++)S.fx.push({k:'boom',x:tw.x+rnd(-18,18),y:tw.y-rnd(0,60),r:rnd(22,36),t:0,delay:i*.08,life:.5,fire:i%2});
+  for(let i=0;i<6;i++)S.fx.push({k:'poof',x:tw.x+rnd(-26,26),y:tw.y+rnd(-10,8),t:0,delay:.2+i*.05,life:.7,r:rnd(10,16)});
+  floatText(tw.x,tw.y-80,'塔被打爆了！','#ff7a5a');updateHud();
 }
 function robotDie(e){const B=S.hb;B.ph='dying';B.t=0;B.dx=e.x;B.dy=e.y;B.df=Math.cos(e.ang)<-.1?-1:1;B.beam=null;S.shake=1;
   for(let i=0;i<9;i++)S.fx.push({k:'boom',x:e.x+rnd(-50,50),y:e.y-rnd(10,170),r:rnd(26,46),t:0,delay:i*.18,life:.5,fire:i%2});
